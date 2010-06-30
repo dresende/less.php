@@ -1,5 +1,12 @@
 Less.php let's you convert .less files into .css
 
+How to Use
+----------
+
+Run on the console: lessc file.less > output.css
+
+If you want you can check the lessc file so you can use the class inside your code.
+
 Supported
 ---------
 - variables
@@ -10,7 +17,7 @@ Supported
 
 Missing
 -------
-- namespaces & acessors
+- namespaces & accessors
 - importing
 
 TBD

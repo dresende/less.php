@@ -1,0 +1,27 @@
+@light-blue: #ffffff;
+@default-border: .4em;
+
+/**
+ * First comment
+ **/
+.bordered (@radius: 3px) {
+	border-radius: @radius;
+	-moz-border-radius: @radius;
+	-webkit-border-radius: @radius;
+}
+
+#header, #content {
+	// second comment
+	@red-color: #abcdef + #111;	// other comment
+	a:active, a:hover {
+		text-decoration: none; // one more comment
+		border: @default-border + .2 solid black;
+	}
+	color: @light-blue / 4;
+	.bordered ( 5px );
+	:hover { color: @red-color; }
+	
+	.item {
+		color: #af6788;
+	}
+}

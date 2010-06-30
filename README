@@ -1,1 +1,19 @@
-More info comming soon
+Less.php let's you convert .less files into .css
+
+Supported
+---------
+- variables
+- mixins
+- nested rules
+- operations
+- comments (C-style and inline)
+
+Missing
+-------
+- namespaces & acessors
+- importing
+
+TBD
+---
+- math functions for operations (min, max, avg, ..)
+- suggestions?

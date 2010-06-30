@@ -1,0 +1,9 @@
+#!/usr/bin/env php
+<?php
+	require_once dirname(__FILE__) . '/lib/entities.less.class.php';
+
+	$css = file_get_contents($_SERVER['argv'][1]);
+
+	$less = new LessCode($css);
+	echo $less->output();
+?>

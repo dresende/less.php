@@ -1,10 +1,24 @@
-<?php	
+<?php
+	/**
+	 * Less Debug Utility
+	 *
+	 * Not done yet, for now your just (un)comment the printf
+	 * if you want debug or not
+	 *
+	 **/
 	class LessDebug {
 		public function output($text) {
 			//printf("[debug] %s\n", $text);
 		}
 	}
 
+	/**
+	 * LessScope
+	 *
+	 * The base of any scope for now. It has methods used on the root
+	 * elements or on nested elements.
+	 *
+	 **/
 	class LessScope {
 		protected $parent = null;
 		protected $declarations = array();

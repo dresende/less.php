@@ -1,6 +1,14 @@
 <?php
 	require_once dirname(__FILE__) . '/common.less.class.php';
 
+	/**
+	 * LessCode
+	 *
+	 * Main class. Use it to check LESS code and compile it.
+	 * After initializing, the class will atempt to parse the
+	 * code. If it sees anything it doesn't like, it will throw
+	 * an exception. If not, you can call and echo output().
+	 **/
 	class LessCode extends LessScope {
 		public function __construct($code) {
 			$this->debug = new LessDebug();
@@ -76,7 +84,13 @@
 			}
 		}
 	}
-	
+
+	/**
+	 * LessDeclaration
+	 *
+	 * This is used to store an element declaration or possibly a mixin.
+	 * It can contain nested declarations.
+	 **/
 	class LessDeclaration extends LessScope {
 		private $parameters = array();
 		private $called_parameters = array();
@@ -292,7 +306,16 @@
 			return null;
 		}
 	}
-	
+
+	/**
+	 * LessProperty
+	 *
+	 * This is used to convert a property value. It can match variables,
+	 * units, percentage and colors (and numbers of course).
+	 *
+	 * It gives priority to * and / operators and also checks for nested
+	 * operations (using parenthesis).
+	 **/
 	class LessProperty {
 		private $value;
 		private $scope;

@@ -370,6 +370,14 @@
 			// replace variables
 			$this->value = preg_replace_callback('/@([a-z\-0-9]+)/i', array($this, 'translateVariable'), $this->value);
 
+			// find functions, like min(), max(), ..
+			do {
+				$new_value = preg_replace_callback('/([a-z]+)\(\s*([^\(\)]+)\s*\)/', array($this, 'translateFunctions'), $this->value, 1);
+				if ($new_value == $this->value) break;
+				
+				$this->value = $new_value;
+			} while (true);
+
 			// find nested operations, the ones between ( and )
 			do {
 				$new_value = preg_replace_callback('/\(\s*(.+?)\s*\)/', array($this, 'translateNestedOperation'), $this->value, 1);
@@ -452,6 +460,84 @@
 			return $after;
 		}
 		
+		public function translateFunctions($match) {
+			$fun = $match[1];
+			
+			if (!in_array($fun, array('min', 'max', 'avg', 'round', 'ceil', 'floor')))
+				return $match[0];
+
+			$op = new LessProperty($match[2], $this->scope);
+			$data = $op->output();
+			
+			$data = preg_split('/\s*,\s*/', trim($data));
+			$fun_unit = false;
+			
+			switch ($fun) {
+				case 'min':
+				case 'max':
+				case 'avg':	// min/max/avg(<value>, ..)
+					for ($i = 0; $i < count($data); $i++) {
+						if (preg_match('/^([0-9]+|[0-9]*\.[0-9]+)'.$this->units_expr.'$/', $data[$i], $m)) {
+							if ($fun_unit !== false && $fun_unit != $m[2]) {
+								throw new Exception("Calling {$fun}() with several diferent units ({$fun_unit} and {$m[2]})");
+							}
+							$fun_unit = $m[2];
+							
+							$data[$i] = $m[1];
+						} else {
+							$data[$i] = (double) $m[1];
+						}
+					}
+					
+					switch ($fun) {
+						case 'min':
+							$data = min($data);
+							break;
+						case 'max':
+							$data = max($data);
+							break;
+						case 'avg':
+							$data = array_sum($data) / count($data);
+							break;
+					}
+					break;
+				case 'round':	// round(<value>[, <decimal_places> = 0 ])
+				case 'ceil':
+				case 'floor':	// ceil/floor(<value>)
+					if (preg_match('/^([0-9]+|[0-9]*\.[0-9]+)'.$this->units_expr.'$/', $data[0], $m)) {
+						if ($fun_unit !== false && $fun_unit != $m[2]) {
+							throw new Exception("Calling {$fun}() with several diferent units ({$fun_unit} and {$m[2]})");
+						}
+						$fun_unit = $m[2];
+						
+						$data[0] = $m[1];
+					} else {
+						$data[0] = (double) $m[1];
+					}
+					
+					switch ($fun) {
+						case 'round':
+							if (!isset($data[1]))
+								$data[1] = 0;
+					
+							$data = round($data[0], isset($data[1]) ? $data[1] : 0);
+							break;
+						case 'ceil':
+							$data = ceil($data[0]);
+							break;
+						case 'floor':
+							$data = floor($data[0]);
+							break;
+					}
+					break;
+			}
+					
+			if ($fun_unit !== false)
+				$data .= $fun_unit;
+
+			return $data;
+		}
+		
 		public function checkPart($part) {
 			if (substr($part, 0, 1) == '#') {
 				// color
@@ -469,7 +555,7 @@
 						return array(hexdec($part{0}.$part{0}), hexdec($part{1}.$part{1}), hexdec($part{2}.$part{2}));
 				}
 				throw new Exception("Invalid color format inside property expression");
-			} elseif (preg_match('/^([0-9]+|0?\.[0-9]+)'.$this->units_expr.'$/', $part, $m)) {
+			} elseif (preg_match('/^([0-9]+|[0-9]*\.[0-9]+)'.$this->units_expr.'$/', $part, $m)) {
 				if ($m[2] == '%') {
 					$this->percent = true;
 					return $m[1] / 100;

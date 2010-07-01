@@ -1,5 +1,6 @@
 @light-blue: #111 + #111;
 @default-border: .4em;
+@max-border: 2em;
 
 /**
  * First comment
@@ -26,4 +27,8 @@
 	.item {
 		color: #af6788;
 	}
+}
+
+#nav {
+	margin: round(avg(@max-border, 1em, .5em), 2);
 }

@@ -43,20 +43,29 @@
 		lesshelpfunction_normalizeparam($data[0], $unit, $prop);
 		$unit = '%';
 		lesshelpfunction_normalizeparam($data[1], $unit, $prop);
-		
+
 		// convert to HSV
-		$data[0] = lesshelpfunction_rgb2hsv($data[0][0] / 255, $data[0][1] / 255, $data[0][2] / 255);
+		$data[0] = lesshelpfunction_rgb2hsv($data[0][0], $data[0][1], $data[0][2]);
 		
 		// add/subtract to VALUE (between 0 and 100)
 		$data[0][2] = max(min($data[0][2] + $data[1], 100), 0);
 		$data[0] = lesshelpfunction_hsv2rgb($data[0][0], $data[0][1], $data[0][2]);
 
-		return 'rgb('.($data[0][0]*255).','.($data[0][1]*255).','.($data[0][2]*255).')';
+		return lesshelpfunction_color2hex($data[0]);
 	}
 	
 	function lessfunction_darken(&$data, &$prop) {
 		$data[1] = '-'.$data[1];
 		return lessfunction_lighten($data, $prop);
+	}
+	
+	function lessfunction_greyscale(&$data, &$prop) {
+		$unit = 'color';
+		lesshelpfunction_normalizeparam($data[0], $unit, $prop);
+		
+		$grey = ($data[0][0] * 0.3) + ($data[0][1] * 0.59) + ($data[0][2] * 0.11);
+		
+		return lesshelpfunction_color2hex(array($grey, $grey, $grey));
 	}
 	
 	function lesshelpfunction_normalizeparams(&$data, &$prop) {
@@ -103,7 +112,19 @@
 		return $val . ($unit !== false ? $unit : '');
 	}
 
+	function lesshelpfunction_color2hex($c) {
+		//return 'rgb('.implode(',', $c).')';
+		return '#'
+			. str_pad(dechex($c[0]), 2, '0', STR_PAD_LEFT)
+			. str_pad(dechex($c[1]), 2, '0', STR_PAD_LEFT)
+			. str_pad(dechex($c[2]), 2, '0', STR_PAD_LEFT);
+	}
+
 	function lesshelpfunction_rgb2hsv($r, $g, $b) {
+		$r /= 255;
+		$g /= 255;
+		$b /= 255;
+		
 		$M = max($r, $g, $b);
 		$m = min($r, $g, $b);
 		$C = $M - $m;
@@ -137,6 +158,7 @@
 
 		if ($s == 0) {
 			// grey tones
+			$v *= 255;
 			return array($v, $v, $v);
 		} else {
 			$s /= 100;
@@ -147,6 +169,10 @@
 			if ($i % 2 == 0) $f = 1 - $f;
 			$m = $v * (1 - $s);
 			$n = $v * (1 - $s * $f);
+			
+			$v *= 255;
+			$n *= 255;
+			$m *= 255;
 
 			switch ($i) {
 				case 6:
@@ -158,8 +184,5 @@
 				case 5: return array($v, $m, $n);
 			}
 		}
-
-		$r = $g = $b = 0;
-		return array($r, $g, $b);
 	}
 ?>

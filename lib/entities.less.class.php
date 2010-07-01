@@ -10,11 +10,23 @@
 	 * an exception. If not, you can call and echo output().
 	 **/
 	class LessCode extends LessScope {
-		public function __construct($code) {
+		/**
+		 * LessCode::__construct()
+		 *
+		 * @param	Mixed		$code		LESS code (optional)
+		 **/
+		public function __construct($code = false) {
 			$this->debug = new LessDebug();
-			$this->parse($code);
+			
+			if ($code !== false)
+				$this->parse($code);
 		}
 		
+		/**
+		 * LessCode::output()
+		 *
+		 * @return	CSS code
+		 **/
 		public function output() {
 			$output = "";
 
@@ -25,6 +37,25 @@
 			return $output;
 		}
 		
+		/**
+		 * LessCode::parseFile($path)
+		 *
+		 * @param	String		$path		Path to LESS file
+		 * @return	Boolean				Success
+		 **/
+		public function parseFile($path) {
+			if (!file_exists($path))
+				return false;
+
+			return $this->parse(file_get_contents($path));
+		}
+		
+		/**
+		 * LessCode::parse($data)
+		 *
+		 * @param	String		$data		LESS code
+		 * @return	Boolean				Success
+		 **/
 		public function parse($data) {
 			// strip comments
 			$data = preg_replace('|\/\*.*?\*\/|s', '', $data);
@@ -82,6 +113,8 @@
 				
 				$this->declarations[] = new LessDeclaration($dec_name, $dec_value, $this, $this->debug);
 			}
+			
+			return true;
 		}
 	}
 

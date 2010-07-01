@@ -107,7 +107,7 @@
 				$this->is_mixin = true;
 				$this->names = array($m[1]);
 				
-				$params = preg_split('/\s*,\s*/', $m[2], -1, PREG_SPLIT_NO_EMPTY);
+				$params = preg_split('/\s*;\s*/', $m[2], -1, PREG_SPLIT_NO_EMPTY);
 				for ($i = 0; $i < count($params); $i++) {
 					if ($params[$i]{0} != '@') {
 						throw new Exception("Invalid mixin declaration (missing '@' before '{$params[$i]}')");
@@ -272,8 +272,12 @@
 		
 		public function setCalledParameters($params) {
 			$n = 0;
-			foreach ($this->parameters as $k => $v)
+			foreach ($this->parameters as $k => $v) {
+				if (!isset($params[$n])) {
+					throw new Exception("Invalid mixin call {$this->names[0]}. Missing parameter {$n}");
+				}
 				$this->called_parameters[$k] = $params[$n++];
+			}
 		}
 		
 		public function getName() {
@@ -334,8 +338,11 @@
 
 			// find nested operations, the ones between ( and )
 			do {
-				$this->value = preg_replace_callback('/\(\s*(.+?)\s*\)/', array($this, 'translateNesteOperation'), $this->value, 1, $replaced);
-			} while ($replaced > 0);
+				$new_value = preg_replace_callback('/\(\s*(.+?)\s*\)/', array($this, 'translateNestedOperation'), $this->value, 1);
+				if ($new_value == $this->value) break;
+				
+				$this->value = $new_value;
+			} while (true);
 			
 			// replace operations * and /
 			do {
@@ -392,7 +399,8 @@
 			$dec = $this->scope;
 			while ($dec !== null) {
 				if ($dec->variableExists($match[1])) {
-					return '('.$dec->getVariable($match[1]).')';
+					$prop = new LessProperty($dec->getVariable($match[1]), $this->scope);
+					return $prop->output();
 				}
 				
 				$dec = $dec->getParent();
@@ -400,9 +408,14 @@
 			return $match[0];
 		}
 		
-		public function translateNesteOperation($match) {
-			$op = new LessProperty($match[1], $this->scope);
-			return $op->output();
+		public function translateNestedOperation($match) {
+			$before = $match[1];
+			$op = new LessProperty($before, $this->scope);
+			$after = $op->output();
+			
+			if ($before == $after)
+				return $match[0];
+			return $after;
 		}
 		
 		public function checkPart($part) {

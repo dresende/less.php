@@ -5,11 +5,13 @@
 /**
  * First comment
  **/
-.bordered (@radius: 3px; @color: rgba(100, 100, 100, .5)) {
+.bordered (@radius: 3px; @shadow-color: rgba(100, 100, 100, .5)) {
 	border-radius: @radius;
 	-moz-border-radius: @radius;
 	-webkit-border-radius: @radius;
-	rgba-color: @color;
+	box-shadow: 0 0 3px @shadow-color;
+	-moz-box-shadow: 0 0 3px @shadow-color;
+	-webkit-box-shadow: 0 0 3px @shadow-color;
 }
 
 #header, #content {
@@ -18,7 +20,7 @@
 	a:active, a:hover {
 		text-decoration: none; // one more comment
 		border: @default-border + .2 solid black;
-		background: url(xxx/sdfsdf.png) left center repeat-x;
+		background: url(some/file.png) left center repeat-x;
 	}
 	color: @light-blue * 2;
 	.bordered ( 5px, );
@@ -30,5 +32,6 @@
 }
 
 #nav {
-	margin: round(avg(@max-border, 1em, .5em), 2);
+	margin: min(@max-border, 1em, .5em);
+	color: darken(#ccc, 20%);		// same as lighten(#ccc, -20%)
 }

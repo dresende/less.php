@@ -1,13 +1,14 @@
-@light-blue: #ffffff;
+@light-blue: #111 + #111;
 @default-border: .4em;
 
 /**
  * First comment
  **/
-.bordered (@radius: 3px) {
+.bordered (@radius: 3px; @color: rgba(100, 100, 100, .5)) {
 	border-radius: @radius;
 	-moz-border-radius: @radius;
 	-webkit-border-radius: @radius;
+	rgba-color: @color;
 }
 
 #header, #content {
@@ -16,9 +17,10 @@
 	a:active, a:hover {
 		text-decoration: none; // one more comment
 		border: @default-border + .2 solid black;
+		background: url(xxx/sdfsdf.png) left center repeat-x;
 	}
-	color: @light-blue / 4;
-	.bordered ( 5px );
+	color: @light-blue * 2;
+	.bordered ( 5px, );
 	:hover { color: @red-color; }
 	
 	.item {

@@ -324,6 +324,7 @@
 		private $value;
 		private $scope;
 		private $part_expr = '(\#[a-f0-9]{3,6}|[0-9\.]+[a-z]{2}|[0-9\.]+\%?|)';
+		private $units_expr = '(%|e(m|x)|p(x|t|c)|in|ft|(m|c)m|k?Hz|deg|g?rad|m?s)';
 		private $unit = false;
 		private $percent = false;
 
@@ -435,7 +436,7 @@
 						return array(hexdec($part{0}.$part{0}), hexdec($part{1}.$part{1}), hexdec($part{2}.$part{2}));
 				}
 				throw new Exception("Invalid color format inside property expression");
-			} elseif (preg_match('/^([0-9]+|0?\.[0-9]+)(px|em|cm|in|mm|%)$/', $part, $m)) {
+			} elseif (preg_match('/^([0-9]+|0?\.[0-9]+)'.$this->units_expr.'$/', $part, $m)) {
 				if ($m[2] == '%') {
 					$this->percent = true;
 					return $m[1] / 100;

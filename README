@@ -27,5 +27,46 @@ Missing
 
 TBD
 ---
-- color functions (lighten, darken, b&w, ..)
+- more color functions (b&w, ..)
 - suggestions?
+
+EXAMPLE
+-------
+
+@light-blue: #111 + #111;
+@default-border: .4em;
+@max-border: 2em;
+
+/**
+ * First comment
+ **/
+.bordered (@radius: 3px; @shadow-color: rgba(100, 100, 100, .5)) {
+	border-radius: @radius;
+	-moz-border-radius: @radius;
+	-webkit-border-radius: @radius;
+	box-shadow: 0 0 3px @shadow-color;
+	-moz-box-shadow: 0 0 3px @shadow-color;
+	-webkit-box-shadow: 0 0 3px @shadow-color;
+}
+
+#header, #content {
+	// second comment
+	@red-color: #abcdef + #111;	// other comment
+	a:active, a:hover {
+		text-decoration: none; // one more comment
+		border: @default-border + .2 solid black;
+		background: url(some/file.png) left center repeat-x;
+	}
+	color: @light-blue * 2;
+	.bordered ( 5px, );
+	:hover { color: @red-color; }
+	
+	.item {
+		color: #af6788;
+	}
+}
+
+#nav {
+	margin: min(@max-border, 1em, .5em);
+	color: darken(#ccc, 20%);		// same as lighten(#ccc, -20%)
+}

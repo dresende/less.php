@@ -1,3 +1,6 @@
+@import reset.css;
+@import "test2.less"
+
 @light-blue: #111 + #111;
 @default-border: .4em;
 @max-border: 2em;
@@ -23,7 +26,7 @@
 		background: url(some/file.png) left center repeat-x;
 	}
 	color: @light-blue * 2;
-	.bordered ( 5px, );
+	.bordered ( 5px; );
 	:hover { color: @red-color; }
 	
 	.item {
@@ -37,7 +40,21 @@
 #nav {
 	margin: min(@max-border, 1em, .5em);
 	color: darken(#ccc, 20%);		// same as lighten(#ccc, -20%)
-	background: greyscale(#f00);
+	background: greyscale(#f00) dataurl(test.gif);
 }
 
 .foo { &.bar { color: black }}
+input{
+  width: 100px;
+  &[type=text]{
+    width: 200px;
+  }
+}
+/*
+NOT WORKING YET
+@-webkit-keyframes greenPulse {
+	from { background-color: #749a02; -webkit-box-shadow: 0 0 9px #333; }
+	50% { background-color: #91bd09; -webkit-box-shadow: 0 0 18px #91bd09; }
+	to { background-color: #749a02; -webkit-box-shadow: 0 0 9px #333; }
+}
+*/

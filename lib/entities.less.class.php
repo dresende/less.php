@@ -195,7 +195,7 @@
 						if ($mixin !== null) {
 							$this->mixins[] = $mixin;
 							$mixin->setMixin();
-							$mixin->setCalledParameters(preg_split('/\s*[,;]\s*/', $prop_params));
+							$mixin->setCalledParameters(preg_split('/\s*;\s*/', $prop_params));
 						}
 						continue;
 					}

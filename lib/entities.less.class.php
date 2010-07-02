@@ -11,6 +11,9 @@
 	 * an exception. If not, you can call and echo output().
 	 **/
 	class LessCode extends LessScope {
+		private $import_path = "./";
+		private $imports = array();
+
 		/**
 		 * LessCode::__construct()
 		 *
@@ -30,6 +33,20 @@
 		 **/
 		public function output() {
 			$output = "";
+			
+			foreach ($this->imports as $import) {
+				if (!file_exists($this->import_path.$import)) {
+					continue;
+				}
+				if (substr($import, -5) == '.less') {
+					$code = new LessCode();
+					$code->parseFile($this->import_path.$import);
+					
+					$output .= $code->output();
+				} else {
+					$output .= file_get_contents($this->import_path.$import);
+				}
+			}
 
 			foreach ($this->declarations as $declaration) {
 				$output .= $declaration->output();
@@ -48,6 +65,8 @@
 			if (!file_exists($path))
 				return false;
 
+			$this->import_path = dirname($path) . '/';
+
 			return $this->parse(file_get_contents($path));
 		}
 		
@@ -63,7 +82,41 @@
 			$data = preg_replace('|\s*\/\/.*|', '', $data);
 			
 			while (strlen($data) > 0) {
-				if ($data{0} == "@") { // "Variables"
+				if (substr($data, 0, 8) == "@import ") {
+					$data = ltrim(substr($data, 8));
+					
+					if (in_array($data{0}, array('"', "'"))) {
+						if (($p = strpos($data, $data{0}, 1)) === false) {
+							throw new Exception("Invalid import declaration - missing delimiter");
+						}
+						
+						$import = substr($data, 1, $p - 1);
+						$data = ltrim(substr($data, $p + 1), ' ');
+						if ($data{0} != ";" && $data{0} != "\n") {
+							throw new Exception("Invalid import declaration - missing ';'");
+						}
+						$data = ltrim(substr($data, 1));
+						
+						$this->imports[] = $import;
+					} else {
+						$p1 = strpos($data, ';');
+						$p2 = strpos($data, "\n");
+						if ($p1 === false && $p2 === false) {
+							$import = $data;
+							$data = "";
+						} elseif ($p1 !== false) {
+							$import = rtrim(substr($data, 0, $p1));
+							$data = ltrim(substr($data, $p1 + 1));
+						} else {
+							$import = rtrim(substr($data, 0, $p2));
+							$data = ltrim(substr($data, $p2 + 1));
+						}
+						
+						$this->imports[] = $import;
+					}
+					continue;
+				}
+				if ($data{0} == "@") { // variables
 					if (($p = strpos($data, ':')) === false) {
 						throw new Exception("Invalid variable set - invalid sintax");
 					}
@@ -175,6 +228,12 @@
 					
 					if ($p2 === false || ($p2 !== false && $p2 > $p)) {
 						// Mixin?
+						if (($pp = strpos($data, '(')) !== false && $pp < $p) {
+							$pp = strpos($data, ')', $pp);
+							$p = strpos($data, ';', $pp);
+						}
+					}
+					if ($p2 === false || ($p2 !== false && $p2 > $p)) {
 						if ($p === false) {
 							$prop_name = substr($data, 1);
 							$data = "";
@@ -317,7 +376,10 @@
 			$n = 0;
 			foreach ($this->parameters as $k => $v) {
 				if (!isset($params[$n])) {
-					throw new Exception("Invalid mixin call {$this->names[0]}. Missing parameter {$n}");
+					if ($v === null) {
+						throw new Exception("Invalid mixin call {$this->names[0]}. Missing parameter ".($n+1)." - {$k}");
+					}
+					$params[$n] = $v;
 				}
 				$this->called_parameters[$k] = $params[$n++];
 			}
@@ -369,7 +431,7 @@
 	 **/
 	class LessProperty {
 		public $part_expr = '(\#[a-f0-9]{3,6}|[0-9\.]+[a-z]{2}|[0-9\.]+\%?|)';
-		public $units_expr = '(%|e(m|x)|p(x|t|c)|in|ft|(m|c)m|k?Hz|deg|g?rad|m?s)';
+		public $units_expr = '(%|e(m|x)|p(x|t|c)|in|ft|(m|c)m|k?Hz|deg|g?rad|gr|m?s)';
 
 		private $value;
 		private $scope;
@@ -383,7 +445,7 @@
 		
 		public function output() {
 			// replace variables
-			$this->value = preg_replace_callback('/@([a-z\-0-9]+)/i', array($this, 'translateVariable'), $this->value);
+			$this->value = preg_replace_callback('/@([a-z0-9_\.\-]+)/i', array($this, 'translateVariable'), $this->value);
 
 			// find functions, like min(), max(), ..
 			do {

@@ -324,7 +324,11 @@
 			
 			foreach ($this->names as $name) {
 				foreach ($decl_name as $subname) {
-					$out[] = $name . (in_array($subname{0}, array('.', ':', '>', '+')) ? '' : ' ') . $subname;
+					if ($subname{0} == '&') {
+						$out[] = $name . substr($subname, 1);
+					} else {
+						$out[] = $name . (in_array($subname{0}, array(':', '>', '+')) ? '' : ' ') . $subname;
+					}
 				}
 			}
 			

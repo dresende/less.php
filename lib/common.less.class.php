@@ -36,6 +36,10 @@
 			return $this->variables[$name];
 		}
 		
+		public function setVariable($name, $value) {
+			$this->variables[$name] = $value;
+		}
+		
 		public function getDeclaration($name) {
 			foreach ($this->declarations as $dec) {
 				if ($dec->getName() == $name)

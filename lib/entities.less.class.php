@@ -264,11 +264,17 @@
 			if ($this->is_mixin)
 				return "";
 
-			$output = implode(", ", $this->names) . " {" . $this->outputProperties();
-			foreach ($this->mixins as $mixin)
-				$output .= $mixin->outputProperties();
+			$properties = $this->outputProperties();
+			if (strlen($properties) > 0 || count($this->mixins) > 0) {
+				$output = implode(", ", $this->names) . " {" . $properties;
+
+				foreach ($this->mixins as $mixin)
+					$output .= $mixin->outputProperties();
 			
-			$output .= " }\n";
+				$output .= " }\n";
+			} else {
+				$output = "";
+			}
 			
 			foreach ($this->declarations as $dec)
 				$output .= $dec->output();

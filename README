@@ -18,16 +18,16 @@ Supported
 - nested rules
 - operations
 - comments (C-style and inline)
-- functions (min, max, avg, round, ceil, floor)
+- math functions (min, max, avg, round, ceil, floor)
+- color functions (lighten, darken, greyscale)
 
 Missing
 -------
 - namespaces & accessors
-- importing
 
 TBD
 ---
-- more color functions (b&w, ..)
+- dataurl() function to embed images in css
 - suggestions?
 
 EXAMPLE

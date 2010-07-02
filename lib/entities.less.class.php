@@ -234,6 +234,9 @@
 				$decl_name = rtrim(substr($data, 0, $p_decl));
 				$data = ltrim(substr($data, $p_decl + 1));
 				
+				// insure that the last declaration of a group has ';' before '}'
+				$data = preg_replace('/([^;])\s*}/', '$1; }', $data);
+				
 				$brk_c = 0; $p = false;
 				for ($i = 0; $i < strlen($data); $i++) {
 					if ($data{$i} == "{")

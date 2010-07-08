@@ -12,7 +12,6 @@
 	 **/
 	class LessCode extends LessScope {
 		private $import_path = "./";
-		private $imports = array();
 
 		/**
 		 * LessCode::__construct()
@@ -35,16 +34,10 @@
 			$output = "";
 			
 			foreach ($this->imports as $import) {
-				if (!file_exists($this->import_path.$import)) {
-					continue;
-				}
-				if (substr($import, -5) == '.less') {
-					$code = new LessCode();
-					$code->parseFile($this->import_path.$import);
-					
-					$output .= $code->output();
+				if (is_object($import)) {
+					$output .= $import->output();
 				} else {
-					$output .= file_get_contents($this->import_path.$import);
+					$output .= $import;
 				}
 			}
 
@@ -96,8 +89,6 @@
 							throw new Exception("Invalid import declaration - missing ';'");
 						}
 						$data = ltrim(substr($data, 1));
-						
-						$this->imports[] = $import;
 					} else {
 						$p1 = strpos($data, ';');
 						$p2 = strpos($data, "\n");
@@ -111,29 +102,43 @@
 							$import = rtrim(substr($data, 0, $p2));
 							$data = ltrim(substr($data, $p2 + 1));
 						}
+					}
+					
+					if (!file_exists($this->import_path.$import)) {
+						continue;
+					}
+					if (substr($import, -5) == '.less') {
+						$less = new LessCode();
+						foreach ($this->variables as $k => $v)
+							$less->setVariable($k, $v);
+						$less->parseFile($this->import_path.$import);
 						
-						$this->imports[] = $import;
+						$this->imports[] = $less;
+					} else {
+						$this->imports[] = file_get_contents($this->import_path.$import);
 					}
 					continue;
 				}
-				if ($data{0} == "@") { // variables
-					if (($p = strpos($data, ':')) === false) {
-						throw new Exception("Invalid variable set - invalid sintax");
+				if ($data{0} == "@") { // variables (maybe..)
+					if (substr($data, 0, 10) != '@font-face') {
+						if (($p = strpos($data, ':')) === false) {
+							throw new Exception("Invalid variable set - invalid sintax");
+						}
+
+						$var_name = trim(substr($data, 1, $p - 1));
+						$data = ltrim(substr($data, $p + 1));
+
+						if (($p = strpos($data, ';')) === false) {
+							throw new Exception("Invalid variable set - no value");
+						}
+
+						$var_value = rtrim(substr($data, 0, $p));
+						$data = ltrim(substr($data, $p + 1));
+
+						$this->debug->output("Adding variable '{$var_name}'='{$var_value}'");
+						$this->variables[$var_name] = $var_value;
+						continue;
 					}
-
-					$var_name = trim(substr($data, 1, $p - 1));
-					$data = ltrim(substr($data, $p + 1));
-
-					if (($p = strpos($data, ';')) === false) {
-						throw new Exception("Invalid variable set - no value");
-					}
-
-					$var_value = rtrim(substr($data, 0, $p));
-					$data = ltrim(substr($data, $p + 1));
-
-					$this->debug->output("Adding variable '{$var_name}'='{$var_value}'");
-					$this->variables[$var_name] = $var_value;
-					continue;
 				}
 
 				if (($p = strpos($data, '{')) === false) {
@@ -180,7 +185,6 @@
 	 **/
 	class LessDeclaration extends LessScope {
 		private $parameters = array();
-		private $called_parameters = array();
 		private $properties = array();
 		private $mixins = array();
 		private $names = array();
@@ -191,6 +195,7 @@
 			$this->debug = $debug;
 
 			if (preg_match('/^(\..+?)\s*\(\s*(.+)\s*\)\s*$/', $names, $m)) {
+				$debug->output("This declaration is a mixin");
 				$this->is_mixin = true;
 				$this->names = array($m[1]);
 				
@@ -249,12 +254,15 @@
 							$prop_params = "";
 						}
 					
-						$this->debug->output("Included mixin '{$prop_name}'");
+						$this->debug->output("Included mixin '{$prop_name}' '{$prop_params}'");
 						$mixin = $this->findMixin($prop_name);
 						if ($mixin !== null) {
-							$this->mixins[] = $mixin;
+							$this->debug->output("Mixin found!");
 							$mixin->setMixin();
-							$mixin->setCalledParameters(preg_split('/\s*;\s*/', $prop_params));
+							$this->mixins[] = array(
+								'mixin'	=> $mixin,
+								'params'=> preg_split('/\s*;\s*/', trim($prop_params))
+							);
 						}
 						continue;
 					}
@@ -331,7 +339,7 @@
 				$output = implode(", ", $this->names) . " {" . $properties;
 
 				foreach ($this->mixins as $mixin)
-					$output .= $mixin->outputProperties();
+					$output .= $mixin['mixin']->outputProperties($mixin['params']);
 			
 				$output .= " }\n";
 			} else {
@@ -344,16 +352,26 @@
 			return $output;
 		}
 		
-		public function outputProperties() {
+		public function outputProperties($params = false) {
 			$output = "";
 			
 			foreach ($this->properties as $k => $v) {
-				if (count($this->parameters) > 0) {
+				if ($params !== false) {
 					$vars_saved = $this->variables;
 					$this->variables = $this->parameters;
-					foreach ($this->called_parameters as $k2 => $v2)
-						if (strlen($v2))
-							$this->variables[$k2] = $v2;
+
+					$n = 0;
+					foreach ($this->parameters as $k2 => $v2) {
+						if (!isset($params[$n])) {
+							if ($v2 === null) {
+								throw new Exception("Invalid mixin call {$this->names[0]}. Missing parameter ".($n+1)." - {$k2}");
+							}
+							$params[$n] = $v2;
+						}
+						$this->variables[$k2] = $params[$n];
+						
+						$n++;
+					}
 					
 					$prop = new LessProperty($v, $this);
 					$output .= " {$k}: " . $prop->output() . ";";
@@ -370,19 +388,6 @@
 		
 		public function setMixin($is_mixin = true) {
 			$this->is_mixin = $is_mixin;
-		}
-		
-		public function setCalledParameters($params) {
-			$n = 0;
-			foreach ($this->parameters as $k => $v) {
-				if (!isset($params[$n])) {
-					if ($v === null) {
-						throw new Exception("Invalid mixin call {$this->names[0]}. Missing parameter ".($n+1)." - {$k}");
-					}
-					$params[$n] = $v;
-				}
-				$this->called_parameters[$k] = $params[$n++];
-			}
 		}
 		
 		public function getName() {
@@ -412,6 +417,16 @@
 				$mixin = $dec->getDeclaration('.'.$name);
 				if ($mixin !== null) {
 					return $mixin;
+				}
+				
+				for ($i = 0; $i < $dec->totalImports(); $i++) {
+					$import = $dec->getImport($i);
+					if (is_object($import)) {
+						$mixin = $import->getDeclaration('.'.$name);
+						if ($mixin !== null) {
+							return $mixin;
+						}
+					}
 				}
 				
 				$dec = $dec->getParent();
@@ -520,6 +535,16 @@
 				if ($dec->variableExists($match[1])) {
 					$prop = new LessProperty($dec->getVariable($match[1]), $this->scope);
 					return $prop->output();
+				}
+				
+				for ($i = 0; $i < $dec->totalImports(); $i++) {
+					$import = $dec->getImport($i);
+					if (is_object($import)) {
+						if ($import->variableExists($match[1])) {
+							$prop = new LessProperty($import->getVariable($match[1]), $this->scope);
+							return $prop->output();
+						}
+					}
 				}
 				
 				$dec = $dec->getParent();

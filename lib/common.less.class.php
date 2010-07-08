@@ -23,6 +23,7 @@
 		protected $parent = null;
 		protected $declarations = array();
 		protected $variables = array();
+		protected $imports = array();
 		
 		public function &getParent() {
 			return $this->parent;
@@ -46,6 +47,14 @@
 					return $dec;
 			}
 			return null;
+		}
+		
+		public function totalImports() {
+			return count($this->imports);
+		}
+		
+		public function &getImport($n) {
+			return $this->imports[$n];
 		}
 	}
 ?>

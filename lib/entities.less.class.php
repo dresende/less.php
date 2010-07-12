@@ -12,6 +12,7 @@
 	 **/
 	class LessCode extends LessScope {
 		private $import_path = "./";
+		private $base_path = "./";
 
 		/**
 		 * LessCode::__construct()
@@ -23,6 +24,17 @@
 			
 			if ($code !== false)
 				$this->parse($code);
+		}
+		
+		/**
+		 * LessCode::setBasePath($path)
+		 *
+		 * Define the path for import paths defined between '<' and '>'
+		 *
+		 * @param	String		$path		Base path
+		 **/
+		public function setBasePath($path) {
+			$this->base_path = $path;
 		}
 		
 		/**
@@ -78,9 +90,12 @@
 				if (substr($data, 0, 8) == "@import ") {
 					$data = ltrim(substr($data, 8));
 					
-					if (in_array($data{0}, array('"', "'"))) {
-						if (($p = strpos($data, $data{0}, 1)) === false) {
-							throw new Exception("Invalid import declaration - missing delimiter");
+					if (in_array($data{0}, array('"', "'", "<"))) {
+						$use_base_path = ($data{0} == "<");
+						$delim = ($use_base_path ? ">" : $data{0});
+
+						if (($p = strpos($data, $delim, 1)) === false) {
+							throw new Exception("Invalid import declaration - missing delimiter '{$delim}'");
 						}
 						
 						$import = substr($data, 1, $p - 1);
@@ -104,18 +119,23 @@
 						}
 					}
 					
-					if (!file_exists($this->import_path.$import)) {
+					if ($use_base_path) {
+						$import = $this->base_path.$import;
+					} else {
+						$import = $this->import_path.$import;
+					}
+					if (!file_exists($import)) {
 						continue;
 					}
 					if (substr($import, -5) == '.less') {
 						$less = new LessCode();
 						foreach ($this->variables as $k => $v)
 							$less->setVariable($k, $v);
-						$less->parseFile($this->import_path.$import);
+						$less->parseFile($import);
 						
 						$this->imports[] = $less;
 					} else {
-						$this->imports[] = file_get_contents($this->import_path.$import);
+						$this->imports[] = file_get_contents($import);
 					}
 					continue;
 				}
@@ -193,8 +213,9 @@
 		public function __construct($names, $data, &$parent, &$debug) {
 			$this->parent = $parent;
 			$this->debug = $debug;
+			$names = ltrim($names);
 
-			if (preg_match('/^(\..+?)\s*\(\s*(.+)\s*\)\s*$/', $names, $m)) {
+			if (preg_match('/^(\..+?)\s*\(\s*(.*)\s*\)\s*$/', $names, $m)) {
 				$debug->output("This declaration is a mixin");
 				$this->is_mixin = true;
 				$this->names = array($m[1]);

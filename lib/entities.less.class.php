@@ -105,6 +105,7 @@
 						}
 						$data = ltrim(substr($data, 1));
 					} else {
+						$use_base_path = false;
 						$p1 = strpos($data, ';');
 						$p2 = strpos($data, "\n");
 						if ($p1 === false && $p2 === false) {
@@ -282,7 +283,7 @@
 							$mixin->setMixin();
 							$this->mixins[] = array(
 								'mixin'	=> $mixin,
-								'params'=> preg_split('/\s*;\s*/', trim($prop_params))
+								'params'=> preg_split('/\s*;\s*/', trim($prop_params), -1, PREG_SPLIT_NO_EMPTY)
 							);
 						}
 						continue;
@@ -466,7 +467,7 @@
 	 * operations (using parenthesis).
 	 **/
 	class LessProperty {
-		public $part_expr = '(\#[a-f0-9]{3,6}|[0-9\.]+[a-z]{2}|[0-9\.]+\%?|)';
+		public $part_expr = '(\#[a-f0-9]{3,6}|rgba?\(.+\)|[0-9\.]+[a-z]{2}|[0-9\.]+\%?|)';
 		public $units_expr = '(%|e(m|x)|p(x|t|c)|in|ft|(m|c)m|k?Hz|deg|g?rad|gr|m?s)';
 
 		private $value;
@@ -482,16 +483,38 @@
 		public function output() {
 			// replace variables
 			$this->value = preg_replace_callback('/@([a-z0-9_\.\-]+)/i', array($this, 'translateVariable'), $this->value);
-
-			// find functions, like min(), max(), ..
-			do {
-				$new_value = preg_replace_callback('/([a-z]+)\(\s*([^\(\)]+)\s*\)/', array($this, 'translateFunctions'), $this->value, 1);
-				if ($new_value == $this->value) break;
-				
-				$this->value = $new_value;
-			} while (true);
+			
+			for ($i = 0; $i < strlen($this->value); $i++) {
+				if (substr($this->value, $i, 1) == "(") {
+					if (!preg_match('/(\w[\w\d]+)$/', substr($this->value, 0, $i), $m)) {
+						continue;
+					}
+					$fun = $m[1];
+					$c = 1;
+			
+					for ($j = $i + 1; $j < strlen($this->value); $j++) {
+						if (substr($this->value, $j, 1) == "(") {
+							$c++;
+						} elseif (substr($this->value, $j, 1) == ")") {
+							$c--;
+					
+							if ($c == 0) break;
+						}
+					}
+			
+					if ($c == 0) {
+						$len = $j - $i - 1;
+						$lessfun = new LessFunction($fun, substr($this->value, $i + 1, $len), $this);
+						$lessfun = $lessfun->parse();
+						
+						$this->value = substr($this->value, 0, $i - strlen($fun)) . $lessfun . substr($this->value, $j + 1);
+						$i += strlen($lessfun) + 1;
+					}
+				}
+			}
 
 			// find nested operations, the ones between ( and )
+			// 16 Aug 2010: I need to test this one...
 			do {
 				$new_value = preg_replace_callback('/\(\s*(.+?)\s*\)/', array($this, 'translateNestedOperation'), $this->value, 1);
 				if ($new_value == $this->value) break;
@@ -513,18 +536,25 @@
 		}
 		
 		public function checkExpression($match) {
-			$part1 = $this->checkPart($match[1]);
-			$part2 = $this->checkPart($match[3]);
+			$p1 = $this->checkPart($match[1]);
+			$p2 = $this->checkPart($match[3]);
 			
 			$op = $match[2];
-			if (is_array($part1) && is_array($part2)) {
-				return $this->buildColor($this->doOp($op, $part1[0], $part2[0]), $this->doOp($op, $part1[1], $part2[1]), $this->doOp($op, $part1[2], $part2[2]));
-			} elseif (is_array($part1)) {
-				return $this->buildColor($this->doOp($op, $part1[0], $part2), $this->doOp($op, $part1[1], $part2), $this->doOp($op, $part1[2], $part2));
-			} elseif (is_array($part2)) {
-				return $this->buildColor($this->doOp($op, $part1, $part2[0]), $this->doOp($op, $part1, $part2[1]), $this->doOp($op, $part1, $part2[2]));
+			if (is_array($p1) && is_array($p2)) {
+				// operationg between arrays
+				if (!isset($p1[3])) $p1[3] = null;
+				if (!isset($p2[3])) $p2[3] = null;
+				return $this->buildColor($this->doOp($op, $p1[0], $p2[0]), $this->doOp($op, $p1[1], $p2[1]), $this->doOp($op, $p1[2], $p2[2]), $this->doOp($op, $p1[3], $p2[3]));
+			} elseif (is_array($p1)) {
+				// operationg between array and value
+				if (!isset($p1[3])) $p1[3] = null;
+				return $this->buildColor($this->doOp($op, $p1[0], $p2), $this->doOp($op, $p1[1], $p2), $this->doOp($op, $p1[2], $p2), $this->doOp($op, $p1[3], $p2));
+			} elseif (is_array($p2)) {
+				// operationg between value and array
+				if (!isset($p2[3])) $p2[3] = null;
+				return $this->buildColor($this->doOp($op, $p1, $p2[0]), $this->doOp($op, $p1, $p2[1]), $this->doOp($op, $p1, $p2[2]), $this->doOp($op, $p1, $p2[3]));
 			}
-			$val = $this->doOp($match[2], $part1, $part2);
+			$val = $this->doOp($match[2], $p1, $p2);
 			if ($this->unit !== false)
 				return $val . $this->unit;
 			if ($this->percent !== false)
@@ -533,7 +563,7 @@
 		}
 		
 		public function doOp($op, $p1, $p2) {
-			//printf("[OP] '%s' %s '%s'\n", $p1, $op, $p2);
+			if ($p1 === null || $p2 === null) return null;
 			switch ($op) {
 				case '*': return $p1 * $p2;
 				case '/': return $p1 / $p2;
@@ -542,7 +572,11 @@
 			}
 		}
 		
-		public function buildColor($c1, $c2, $c3) {
+		public function buildColor($c1, $c2, $c3, $alpha = null) {
+			if ($alpha !== null) {
+				// when alpha channel is involved, rgba() needs to be used
+				return sprintf("rgba(%d, %d, %d, %d)", $c1, $c2, $c3, $alpha);
+			}
 			$c = str_pad(dechex(max(min($c1, 255), 0)), 2, '0', STR_PAD_LEFT)
 			   . str_pad(dechex(max(min($c2, 255), 0)), 2, '0', STR_PAD_LEFT)
 			   . str_pad(dechex(max(min($c3, 255), 0)), 2, '0', STR_PAD_LEFT);
@@ -583,21 +617,6 @@
 			return $after;
 		}
 		
-		public function translateFunctions($match) {
-			$fun = $match[1];
-			$fun_call = 'lessfunction_'.$fun;
-			
-			if (!function_exists($fun_call))
-				return $match[0];
-
-			$op = new LessProperty($match[2], $this->scope);
-			$data = $op->output();
-			
-			$data = preg_split('/\s*,\s*/', trim($data));
-			
-			return $fun_call($data, $this);
-		}
-		
 		public function checkPart($part) {
 			if (substr($part, 0, 1) == '#') {
 				// color
@@ -627,9 +646,96 @@
 
 				$this->unit = $m[2];
 				return $m[1];
+			} elseif (preg_match('/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/', $part, $m)) {
+				// color rgb(r, g, b)
+				if ($this->unit !== false && $this->unit != 'color') {
+					throw new Exception("Mixing units inside property expressions ('{$this->unit}' and 'color')");
+				}
+				return array($m[1], $m[2], $m[3]);
+			} elseif (preg_match('/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/', $part, $m)) {
+				// color rgba(r, g, b, a)
+				if ($this->unit !== false && $this->unit != 'color') {
+					throw new Exception("Mixing units inside property expressions ('{$this->unit}' and 'color')");
+				}
+				return array($m[1], $m[2], $m[3], $m[4]);
 			} else {
 				return $part;
 			}
+		}
+	}
+	
+	class LessFunction {
+		public function __construct($name, $params, &$scope) {
+			$this->name = $name;
+			$this->params = $params;
+			$this->scope = $scope;
+			
+			for ($i = 0; $i < strlen($this->params); $i++) {
+				if (substr($this->params, $i, 1) == "(") {
+					if (!preg_match('/(\w[\w\d]+)$/', substr($this->params, 0, $i), $m)) {
+						continue;
+					}
+					$fun = $m[1];
+					$c = 1;
+			
+					for ($j = $i + 1; $j < strlen($this->params); $j++) {
+						if (substr($this->params, $j, 1) == "(") {
+							$c++;
+						} elseif (substr($this->params, $j, 1) == ")") {
+							$c--;
+					
+							if ($c == 0) break;
+						}
+					}
+			
+					if ($c == 0) {
+						$len = $j - $i - 1;
+						$lessfun = new LessFunction($fun, substr($this->params, $i + 1, $len), $this->scope);
+						$lessfun = $lessfun->parse();
+						
+						$this->params = substr($this->params, 0, $i - strlen($fun)) . $lessfun . substr($this->params, $j + 1);
+						$i += strlen($lessfun) + 1;
+					}
+				}
+			}
+		}
+		
+		public function parse() {
+			if (in_array($this->name, array('rgb', 'rgba'))) {
+				return sprintf("%s(%s)", $this->name, $this->params);
+			}
+			
+			$fun_call = 'lessfunction_'.$this->name;
+			
+			if (!function_exists($fun_call)) {
+				return sprintf("%s(%s)", $this->name, $this->params);
+			}
+
+			$op = new LessProperty($this->params, $this->scope);
+			$data = trim($op->output());
+			
+			$parenthesis = 0;
+			$params = array();
+			$s = 0;
+			for ($i = 0; $i < strlen($data); $i++) {
+				switch (substr($data, $i, 1)) {
+					case ",":
+						if ($parenthesis == 0) {
+							$params[] = trim(substr($data, $s, $i - $s));
+							$s = $i + 1;
+						}
+						break;
+					case "(":
+						$parenthesis++;
+						break;
+					case ")":
+						$parenthesis--;
+						break;
+				}
+			}
+			$params[] = trim(substr($data, $s, $i - $s));
+
+			return $fun_call($params, $this->scope);
 		}
 	}
 ?>

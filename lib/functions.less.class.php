@@ -95,7 +95,19 @@
 					$param = array(hexdec($param{0}.$param{0}), hexdec($param{1}.$param{1}), hexdec($param{2}.$param{2}));
 					return;
 			}
-			throw new Exception("Invalid color format inside property expression");
+			throw new Exception("Invalid color format inside property expression '{$param}'");
+		} elseif (preg_match('/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/', $param, $m)) {
+			// color rgb(r, g, b)
+			if ($unit !== false && $unit != 'color') {
+				throw new Exception("Mixing units inside property expressions ('{$unit}' and 'color')");
+			}
+			$param = array($m[1], $m[2], $m[3]);
+		} elseif (preg_match('/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/', $param, $m)) {
+			// color rgba(r, g, b, a)
+			if ($unit !== false && $unit != 'color') {
+				throw new Exception("Mixing units inside property expressions ('{$unit}' and 'color')");
+			}
+			$param = array($m[1], $m[2], $m[3], $m[4]);
 		} elseif (preg_match('/^(\-?[0-9]+|\-?[0-9]*\.[0-9]+)'.$prop->units_expr.'$/', $param, $m)) {
 			if ($unit !== false && $unit != $m[2]) {
 				throw new Exception("Calling function with several diferent units ({$unit} and {$m[2]})");
@@ -104,7 +116,7 @@
 			
 			$param = $m[1];
 		} else {
-			$param = (double) $m[1];
+			$param = (double) $param;
 		}
 	}
 	

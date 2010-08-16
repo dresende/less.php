@@ -283,7 +283,7 @@
 							$mixin->setMixin();
 							$this->mixins[] = array(
 								'mixin'	=> $mixin,
-								'params'=> preg_split('/\s*;\s*/', trim($prop_params), -1, PREG_SPLIT_NO_EMPTY)
+								'params'=> preg_split('/\s*;\s*/', trim($prop_params))
 							);
 						}
 						continue;
@@ -384,7 +384,7 @@
 
 					$n = 0;
 					foreach ($this->parameters as $k2 => $v2) {
-						if (!isset($params[$n])) {
+						if (!isset($params[$n]) || strlen(trim($params[$n])) == 0) {
 							if ($v2 === null) {
 								throw new Exception("Invalid mixin call {$this->names[0]}. Missing parameter ".($n+1)." - {$k2}");
 							}

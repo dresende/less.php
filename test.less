@@ -18,9 +18,9 @@
 	border-radius: @radius;
 	-moz-border-radius: @radius;
 	-webkit-border-radius: @radius;
-	box-shadow: 0 0 3px @shadow-color;
-	-moz-box-shadow: 0 0 3px @shadow-color;
-	-webkit-box-shadow: 0 0 3px @shadow-color;
+	box-shadow: 0 0 @radius @shadow-color;
+	-moz-box-shadow: 0 0 @radius @shadow-color;
+	-webkit-box-shadow: 0 0 @radius @shadow-color;
 }
 
 #header, #content {
@@ -68,4 +68,5 @@ NOT WORKING YET
 .function-tests {
 	/*border: max(min(3px, 10px), 7px, round(8.49px));	// nested functions*/
 	color: rgb(  3, 3  ,3) * 3;
+	.bordered(;#aaa);
 }

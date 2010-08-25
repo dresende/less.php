@@ -385,7 +385,7 @@
 					$n = 0;
 					foreach ($this->parameters as $k => $v) {
 						if (!isset($params[$n]) || strlen(trim($params[$n])) == 0) {
-							if ($v2 === null) {
+							if ($v === null) {
 								throw new Exception("Invalid mixin call {$this->names[0]}. Missing parameter ".($n+1)." - {$k}");
 							}
 							$params[$n] = $v;

@@ -313,7 +313,7 @@
 						$this->variables[substr($prop_name, 1)] = $prop_value;
 						$this->debug->output("Variable '".substr($prop_name, 1)."'='{$prop_value}'");
 					} else {
-						$this->properties[$prop_name] = $prop_value;
+						$this->properties[] = array($prop_name, $prop_value);
 						$this->debug->output("Property '{$prop_name}'='{$prop_value}'");
 					}
 					continue;
@@ -377,31 +377,31 @@
 		public function outputProperties($params = false) {
 			$output = "";
 			
-			foreach ($this->properties as $k => $v) {
+			foreach ($this->properties as $prop) {	// $prop[0] = name ; $prop[1] = value
 				if ($params !== false) {
 					$vars_saved = $this->variables;
 					$this->variables = $this->parameters;
 
 					$n = 0;
-					foreach ($this->parameters as $k2 => $v2) {
+					foreach ($this->parameters as $k => $v) {
 						if (!isset($params[$n]) || strlen(trim($params[$n])) == 0) {
 							if ($v2 === null) {
-								throw new Exception("Invalid mixin call {$this->names[0]}. Missing parameter ".($n+1)." - {$k2}");
+								throw new Exception("Invalid mixin call {$this->names[0]}. Missing parameter ".($n+1)." - {$k}");
 							}
-							$params[$n] = $v2;
+							$params[$n] = $v;
 						}
-						$this->variables[$k2] = $params[$n];
+						$this->variables[$k] = $params[$n];
 						
 						$n++;
 					}
 					
-					$prop = new LessProperty($v, $this);
-					$output .= " {$k}: " . $prop->output() . ";";
+					$lprop = new LessProperty($prop[1], $this);
+					$output .= " {$prop[0]}: " . $lprop->output() . ";";
 					
 					$this->variables = $vars_saved;
 				} else {
-					$prop = new LessProperty($v, $this);
-					$output .= " {$k}: " . $prop->output() . ";";
+					$lprop = new LessProperty($prop[1], $this);
+					$output .= " {$prop[0]}: " . $lprop->output() . ";";
 				}
 			}
 			

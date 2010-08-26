@@ -141,7 +141,9 @@
 					continue;
 				}
 				if ($data{0} == "@") { // variables (maybe..)
-					if (substr($data, 0, 10) != '@font-face') {
+					$should_be_variable = (($p = strpos($data, ':')) !== false && strpos(substr($data, 0, $p), '{') === false);
+
+					if ($should_be_variable) {
 						if (($p = strpos($data, ':')) === false) {
 							throw new Exception("Invalid variable set - invalid sintax");
 						}
@@ -346,7 +348,7 @@
 				$decl_value = trim(substr($data, 0, $p));
 				$data = ltrim(substr($data, $p + 1));
 				
-				$this->debug->output("Sub-declaration '{$decl_name}'");
+				$this->debug->output("Sub-declaration '{$decl_name}' <".$this->buildSubDeclarationName($decl_name).">");
 
 				$this->declarations[] = new LessDeclaration($this->buildSubDeclarationName($decl_name), $decl_value, $this, $this->debug);
 			}
@@ -368,8 +370,21 @@
 				$output = "";
 			}
 			
-			foreach ($this->declarations as $dec)
-				$output .= $dec->output();
+			//
+			// Declaration examples that start with '@':
+			//
+			// CSS3 @keyframes ; @font-face ; ..
+			// Webkit @-webkit-keyframes
+			//
+			if (count($this->declarations) && substr($this->names[0], 0, 1) == '@') {
+				$output .= $this->names[0] . " {\n";
+				foreach ($this->declarations as $dec)
+					$output .= " ".$dec->output();
+				$output .= "}\n";
+			} else {
+				foreach ($this->declarations as $dec)
+					$output .= $dec->output();
+			}
 			
 			return $output;
 		}
@@ -417,6 +432,10 @@
 		}
 		
 		private function buildSubDeclarationName($decl_name) {
+			if (substr($this->names[0], 0, 1) == '@') {
+				return $decl_name;
+			}
+			
 			$out = array();
 			$decl_name = preg_split('/\s*,\s*/', $decl_name, -1, PREG_SPLIT_NO_EMPTY);
 			

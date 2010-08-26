@@ -218,6 +218,8 @@
 		private $mixins = array();
 		private $names = array();
 		private $is_mixin = false;
+		private $last_if = false;
+		private $last_if_success = true; // avoid @else alone to show up
 
 		public function __construct($names, $data, &$parent, &$debug) {
 			$this->parent = $parent;
@@ -363,6 +365,27 @@
 		public function output() {
 			if ($this->is_mixin)
 				return "";
+			
+			// handle @if and @elseif (they are 99% the same)
+			if (preg_match('/^(.+)\s*@(else)?if\((.+)\)$/i', $this->names[0], $m)) {
+				$this->parent->setLastIf($m[3]);
+				
+				$if = array($m[3], true, false);
+				if (!lessfunction_if($if, new LessProperty("", $this))) {
+					$this->parent->setLastIfSuccess(false);
+					return "";
+				} else {
+					$this->parent->setLastIfSuccess(true);
+					$this->names[0] = rtrim($m[1]);
+				}
+			// handle @else
+			} elseif (substr(strtolower($this->names[0]), -6) == ' @else') {
+				if ($this->parent->getLastIfSuccess()) {
+					return "";
+				} else {
+					$this->names[0] = rtrim(substr($this->names[0], 0, -5));
+				}
+			}
 
 			$properties = $this->outputProperties();
 			if (strlen($properties) > 0 || count($this->mixins) > 0) {
@@ -435,6 +458,19 @@
 		
 		public function getName() {
 			return $this->names[0];
+		}
+		
+		public function getLastIfSuccess() {
+			return $this->last_if_success;
+		}
+		
+		public function setLastIf($if) {
+			$this->last_if = $if;
+		}
+		
+		public function setLastIfSuccess($success) {
+			printf("LAST IF %s SUCCESSFULL '%s'\n", $success ? "WAS" : "WAS NOT", $this->last_if);
+			$this->last_if_success = $success;
 		}
 		
 		private function buildSubDeclarationName($decl_name) {

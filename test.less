@@ -72,3 +72,13 @@ input{
 	.bordered(;#aaa);
 	outline: if(@max-border < 2.5em, 2.5em - @max-border, none);
 }
+
+p:after {
+	@if(@max-border > 3em) {
+		content: "max border is > 3em";
+	} @elseif(@max-border < 3em) {
+		content: "max border is < 3em";
+	} @else {
+		content: "max border is = 3em";
+	}
+}

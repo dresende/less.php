@@ -67,7 +67,8 @@ input{
 }
 
 .function-tests {
-	/*border: max(min(3px, 10px), 7px, round(8.49px));	// nested functions*/
+	border: max(min(3px, 10px), 7px, round(8.49px));	// nested functions
 	color: rgb(  3, 3  ,3) * 3;
 	.bordered(;#aaa);
+	outline: if(@max-border < 2.5em, 2.5em - @max-border, none);
 }

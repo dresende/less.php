@@ -1,4 +1,25 @@
 <?php
+	function lessfunction_if(&$data, &$prop) {
+		$if = "if(".implode(", ", $data).")";
+		if (!isset($data[1])) return $if;
+		if (!preg_match('/^\s*([^\s]+)\s*(\x3e=?|\x3c=?|==?|!=?)\s*([^\s]+)\s*$/', $data[0], $m)) return $if;
+		if (!isset($data[2])) $data[2] = "";
+		
+		$unit = false;
+		lesshelpfunction_normalizeparam($m[1], $unit, $prop);
+		lesshelpfunction_normalizeparam($m[3], $unit, $prop);
+		
+		switch ($m[2]) {
+			case '>': return ($m[1] > $m[3] ? $data[1] : $data[2]);
+			case '>=': return ($m[1] >= $m[3] ? $data[1] : $data[2]);
+			case '<': return ($m[1] < $m[3] ? $data[1] : $data[2]);
+			case '<=': return ($m[1] <= $m[3] ? $data[1] : $data[2]);
+			case '=':
+			case '==': return ($m[1] == $m[3] ? $data[1] : $data[2]);
+			case '!=': return ($m[1] != $m[3] ? $data[1] : $data[2]);
+		}
+	}
+	
 	function lessfunction_min(&$data, &$prop) {
 		$unit = lesshelpfunction_normalizeparams($data, $prop);
 		

@@ -128,15 +128,21 @@
 					if (!file_exists($import)) {
 						continue;
 					}
-					if (substr($import, -5) == '.less') {
+					if (substr($import, -4) == '.css') {
+						// if it ends with .css, it's a CSS, everything else should be a .less
+						$this->imports[] = file_get_contents($import);
+					} else {
+						if (!file_exists($import) && file_exists($import.'.less')) {
+							// if the import path does not exist but there's a $import.less file, use it
+							$import .= '.less';
+						}
+						
 						$less = new LessCode();
 						foreach ($this->variables as $k => $v)
 							$less->setVariable($k, $v);
 						$less->parseFile($import);
 						
 						$this->imports[] = $less;
-					} else {
-						$this->imports[] = file_get_contents($import);
 					}
 					continue;
 				}

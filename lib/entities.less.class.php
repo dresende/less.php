@@ -226,7 +226,7 @@
 			$this->debug = $debug;
 			$names = ltrim($names);
 
-			if (preg_match('/^(\..+?)\s*\(\s*(.*)\s*\)\s*$/', $names, $m)) {
+			if (preg_match('/^(\.[^\:]+?)\s*\(\s*(.*)\s*\)\s*$/', $names, $m)) {
 				$debug->output("This declaration is a mixin");
 				$this->is_mixin = true;
 				$this->names = array($m[1]);

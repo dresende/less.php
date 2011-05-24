@@ -231,7 +231,7 @@
 				$this->is_mixin = true;
 				$this->names = array($m[1]);
 				
-				$params = preg_split('/\s*;\s*/', $m[2], -1, PREG_SPLIT_NO_EMPTY);
+				$params = $this->splitData($m[2]);
 				for ($i = 0; $i < count($params); $i++) {
 					if ($params[$i]{0} != '@') {
 						throw new Exception("Invalid mixin declaration (missing '@' before '{$params[$i]}')");
@@ -251,12 +251,33 @@
 					$this->parameters[$param_name] = $param_val;
 				}
 			} else {
-				$this->names = preg_split('/\s*,\s*/', trim($names), -1, PREG_SPLIT_NO_EMPTY);
+				$this->names = $this->splitData(trim($names));
 			}
 			
 			$this->parse($data);
 		}
 		
+		private function splitData($data, $sep = ",", $levelup = "(", $leveldown = ")") {
+			$params = array();
+			$offset = 0;
+			$level = 0;
+			for ($i = 0; $i < strlen($data); $i++) {
+				if (strpos($levelup, $data{$i}) !== false)
+					$level++;
+				elseif (strpos($leveldown, $data{$i}) !== false)
+					$level--;
+				elseif ($data{$i} == $sep && $level == 0) {
+					$params[] = trim(substr($data, $offset, $i - $offset));
+					$offset = $i + 1;
+				}
+			}
+			if ($level == 0) {
+				$params[] = trim(substr($data, $offset, $i - $offset));
+			}
+
+			return $params;
+		}
+
 		public function parse($data) {
 			while (strlen($data) > 0) {
 				if ($data{0} == ".") {
@@ -293,7 +314,7 @@
 							$mixin->setMixin();
 							$this->mixins[] = array(
 								'mixin'	=> $mixin,
-								'params'=> preg_split('/\s*;\s*/', trim($prop_params))
+								'params'=> $this->splitData(trim($prop_params))
 							);
 						}
 						continue;
@@ -420,7 +441,7 @@
 		
 		public function outputProperties($params = false) {
 			$output = "";
-			
+
 			foreach ($this->properties as $prop) {	// $prop[0] = name ; $prop[1] = value
 				if ($params !== false) {
 					$vars_saved = $this->variables;
@@ -440,7 +461,7 @@
 					}
 					
 					$lprop = new LessProperty($prop[1], $this);
-					$output .= " {$prop[0]}: " . $lprop->output() . ";";
+					$output .= " {$prop[0]}: " . str_replace('@arguments', implode(' ', array_values($this->variables)), $lprop->output()) . ";";
 					
 					$this->variables = $vars_saved;
 				} else {
@@ -469,7 +490,7 @@
 		}
 		
 		public function setLastIfSuccess($success) {
-			printf("LAST IF %s SUCCESSFULL '%s'\n", $success ? "WAS" : "WAS NOT", $this->last_if);
+			//printf("LAST IF %s SUCCESSFULL '%s'\n", $success ? "WAS" : "WAS NOT", $this->last_if);
 			$this->last_if_success = $success;
 		}
 		

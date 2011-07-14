@@ -1,0 +1,72 @@
+#!/usr/bin/env php
+<?php
+	/**
+	 * You need to install PECL inotify package.
+	 * (on Linux run 'pecl install inotify' and add the extension to your php.ini)
+	 **/
+	if (!isset($_SERVER['argv'][1])) {
+		printf("Usage: %s <folder>\n", basename($_SERVER['argv'][0]));
+		exit(1);
+	}
+
+	$folder = $_SERVER['argv'][1];
+	if (!is_dir($folder)) {
+		printf("Folder '%s' does not exist!\n", $folder);
+		exit(2);
+	}
+
+	$folder = realpath($folder) . '/';
+
+	require_once dirname(__FILE__) . '/lib/entities.less.class.php';
+
+	$less = new LessCode();
+
+	$in = inotify_init();
+	$watch = inotify_add_watch($in, $folder, IN_CREATE | IN_MODIFY | IN_MOVED_FROM | IN_DELETE);
+
+	while (true) {
+		$read = array($in);
+		$write = null;
+		$except = null;
+		if (stream_select($read, $write, $except, 3)) {
+			$events = inotify_read($in);
+			if (is_array($events)) {
+				foreach ($events as $event) {
+					// ignore files that are not css/less
+					if (!preg_match('/\.(c|le)ss$/i', $event['name'])) continue;
+
+					switch ($event['mask']) {
+						case IN_DELETE:
+							if (strtolower(substr($event['name'], -4)) == '.css') {
+								// deleted compiled file, recompile it
+								compileFile($folder . $event['name']);
+							} else {
+								// deleted less file, delete compiled css file
+								@unlink(substr($folder . $event['name'], 0, -4) . 'css');
+							}
+							break;
+						default:
+							// created/modified a less file
+							if (strtolower(substr($event['name'], -5)) == '.less') {
+								// deleted compiled file, recompile it
+								compileFile($folder . $event['name']);
+							}
+							break;
+					}
+				}
+			}
+		}
+	}
+
+	function compileFile($path) {
+		global $less;
+
+		$path = realpath($path);
+
+		printf("Compiling %s..\n", basename($path));
+
+		$less->parseFile($path);
+
+		file_put_contents(substr($path, 0, -4) . 'css', $less->output());
+	}
+?>

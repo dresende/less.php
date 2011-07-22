@@ -24,6 +24,7 @@
 		protected $declarations = array();
 		protected $variables = array();
 		protected $imports = array();
+		protected $importPaths = array();
 		
 		public function &getParent() {
 			return $this->parent;
@@ -55,6 +56,10 @@
 		
 		public function &getImport($n) {
 			return $this->imports[$n];
+		}
+		
+		public function getImportPaths() {
+			return $this->importPaths;
 		}
 	}
 ?>

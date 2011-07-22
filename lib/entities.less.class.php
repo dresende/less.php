@@ -11,8 +11,8 @@
 	 * an exception. If not, you can call and echo output().
 	 **/
 	class LessCode extends LessScope {
-		private $import_path = "./";
-		private $base_path = "./";
+		private $import_path = '.';
+		private $base_path = '.';
 
 		/**
 		 * LessCode::__construct()
@@ -70,7 +70,7 @@
 			if (!file_exists($path))
 				return false;
 
-			$this->import_path = dirname($path) . '/';
+			$this->import_path = dirname($path);
 
 			return $this->parse(file_get_contents($path));
 		}
@@ -121,9 +121,9 @@
 					}
 					
 					if ($use_base_path) {
-						$import = $this->base_path.$import;
+						$import = $this->base_path . '/' . $import;
 					} else {
-						$import = $this->import_path.$import;
+						$import = $this->import_path . '/' . $import;
 					}
 					if (!file_exists($import)) {
 						continue;

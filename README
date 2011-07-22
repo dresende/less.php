@@ -4,6 +4,7 @@ Versions
 --------
 0.0.1	- First official release (beta)
 0.0.3   - Stable release; bug fixes; nested functions support; @if operator support
+0.0.4   - Some improvements thanks to lars-sh
 
 How to Use
 ----------

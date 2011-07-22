@@ -140,7 +140,7 @@
 					if (!file_exists($import)) {
 						continue;
 					}
-					if (is_string($this->restrict_path) === true && stripos(realpath($import), $this->restrict_path) !== 0) {
+					if (is_string($this->restrict_path) === true && strpos(realpath($import), $this->restrict_path) !== 0) {
 						continue;
 					}
 					if (substr($import, -4) == '.css') {

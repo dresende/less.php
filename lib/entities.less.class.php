@@ -13,6 +13,7 @@
 	class LessCode extends LessScope {
 		private $import_path = "./";
 		private $base_path = "./";
+		private $restrict_path = null;
 
 		/**
 		 * LessCode::__construct()
@@ -35,6 +36,17 @@
 		 **/
 		public function setBasePath($path) {
 			$this->base_path = $path;
+		}
+		
+		/**
+		 * LessCode::setRestrictPath($path)
+		 *
+		 * Define the path to restrict access for
+		 *
+		 * @param	String		$path		Restrict path
+		 **/
+		public function setRestrictPath($path) {
+			$this->restrict_path = realpath($path);
 		}
 		
 		/**
@@ -126,6 +138,9 @@
 						$import = $this->import_path.$import;
 					}
 					if (!file_exists($import)) {
+						continue;
+					}
+					if (is_string($this->restrict_path) === true && stripos(realpath($import), $this->restrict_path) !== 0) {
 						continue;
 					}
 					if (substr($import, -4) == '.css') {

@@ -11,8 +11,8 @@
 	 * an exception. If not, you can call and echo output().
 	 **/
 	class LessCode extends LessScope {
-		private $import_path = "./";
-		private $base_path = "./";
+		private $import_path = '.';
+		private $base_path = '.';
 
 		/**
 		 * LessCode::__construct()
@@ -70,7 +70,7 @@
 			if (!file_exists($path))
 				return false;
 
-			$this->import_path = dirname($path) . '/';
+			$this->import_path = dirname($path);
 
 			return $this->parse(file_get_contents($path));
 		}
@@ -121,24 +121,23 @@
 					}
 					
 					if ($use_base_path) {
-						$import = $this->base_path.$import;
+						$import = $this->base_path . '/' . $import;
 					} else {
-						$import = $this->import_path.$import;
+						$import = $this->import_path . '/' . $import;
 					}
-					if (!file_exists($import)) {
+					if (file_exists($import) === false && file_exists($import . '.less') === true) {
+						$import .= '.less';
+					} else {
 						continue;
 					}
+					
 					if (substr($import, -4) == '.css') {
 						// if it ends with .css, it's a CSS, everything else should be a .less
 						$this->imports[] = file_get_contents($import);
 						$this->importPaths[] = $import;
 					} else {
-						if (!file_exists($import) && file_exists($import.'.less')) {
-							// if the import path does not exist but there's a $import.less file, use it
-							$import .= '.less';
-						}
-						
 						$less = new LessCode();
+						$less->setBasePath($this->base_path);
 						foreach ($this->variables as $k => $v)
 							$less->setVariable($k, $v);
 						$less->parseFile($import);

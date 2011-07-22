@@ -11,8 +11,9 @@
 	 * an exception. If not, you can call and echo output().
 	 **/
 	class LessCode extends LessScope {
-		private $import_path = '.';
-		private $base_path = '.';
+		private $import_path = "./";
+		private $base_path = "./";
+		private $restrict_path = null;
 
 		/**
 		 * LessCode::__construct()
@@ -35,6 +36,22 @@
 		 **/
 		public function setBasePath($path) {
 			$this->base_path = $path;
+		}
+		
+		/**
+		 * LessCode::setRestrictPath($path)
+		 *
+		 * Define the path to restrict access for
+		 *
+		 * @param	String		$path		Restrict path
+		 * @return	Boolean				Success
+		 **/
+		public function setRestrictPath($path) {
+			if (is_dir($path)) {
+				$this->restrict_path = realpath($path);
+				return true;
+			}
+			return false;
 		}
 		
 		/**
@@ -130,7 +147,13 @@
 					} else {
 						continue;
 					}
-					
+
+					if (is_string($this->restrict_path)) {
+						$realpath = realpath($import);
+						if ($realpath !== $this->restrict_path && strpos($realpath, $this->restrict_path . PATH_SEPARATOR) !== 0) {
+							continue;
+						}
+					}
 					if (substr($import, -4) == '.css') {
 						// if it ends with .css, it's a CSS, everything else should be a .less
 						$this->imports[] = file_get_contents($import);

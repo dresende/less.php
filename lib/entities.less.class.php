@@ -138,6 +138,7 @@
 						}
 						
 						$less = new LessCode();
+						$less->setBasePath($this->base_path);
 						foreach ($this->variables as $k => $v)
 							$less->setVariable($k, $v);
 						$less->parseFile($import);

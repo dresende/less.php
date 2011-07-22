@@ -47,7 +47,7 @@
 		 * @return	Boolean				Success
 		 **/
 		public function setRestrictPath($path) {
-			if (is_dir($path)) {
+			if (file_exists($path)) {
 				$this->restrict_path = realpath($path);
 				return true;
 			}

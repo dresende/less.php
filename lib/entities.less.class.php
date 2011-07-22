@@ -131,6 +131,7 @@
 					if (substr($import, -4) == '.css') {
 						// if it ends with .css, it's a CSS, everything else should be a .less
 						$this->imports[] = file_get_contents($import);
+						$this->importPaths[] = $import;
 					} else {
 						if (!file_exists($import) && file_exists($import.'.less')) {
 							// if the import path does not exist but there's a $import.less file, use it
@@ -143,6 +144,7 @@
 						$less->parseFile($import);
 						
 						$this->imports[] = $less;
+						$this->importPaths[] = $import;
 					}
 					continue;
 				}

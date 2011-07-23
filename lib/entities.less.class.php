@@ -48,7 +48,7 @@
 		 **/
 		public function setRestrictPath($path) {
 			if (file_exists($path)) {
-				$this->restrict_path = realpath($path);
+				$this->restrict_path = strtr(realpath($path), '\\', '/') . '/';
 				return true;
 			}
 			return false;
@@ -142,15 +142,17 @@
 					} else {
 						$import = $this->import_path . '/' . $import;
 					}
-					if (file_exists($import) === false && file_exists($import . '.less') === true) {
-						$import .= '.less';
-					} else {
-						continue;
+					if (file_exists($import) === false) {
+						if (file_exists($import . '.less') === true) {
+							$import .= '.less';
+						} else {
+							continue;
+						}
 					}
 
 					if (is_string($this->restrict_path)) {
 						$realpath = realpath($import);
-						if ($realpath !== $this->restrict_path && strpos($realpath, $this->restrict_path . PATH_SEPARATOR) !== 0) {
+						if ($realpath !== $this->restrict_path && strpos(strtr($realpath, '\\', '/'), $this->restrict_path) !== 0) {
 							continue;
 						}
 					}

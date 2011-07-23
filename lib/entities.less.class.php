@@ -48,7 +48,7 @@
 		 **/
 		public function setRestrictPath($path) {
 			if (file_exists($path)) {
-				$this->restrict_path = strtr(realpath($path), '\\', '/') . '/';
+				$this->restrict_path = rtrim(strtr(realpath($path), '\\', '/'), '/') . '/';
 				return true;
 			}
 			return false;
